@@ -38,6 +38,7 @@
     ]
   },
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "sass": "^1.83.1"
   }
 }
