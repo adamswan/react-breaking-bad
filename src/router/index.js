@@ -1,6 +1,6 @@
-import Layout from "../pages/Layout";
-import Login from "../pages/Login";
-import NotFount from "../pages/NotFount";
+import Layout from "@/pages/Layout";
+import Login from "@/pages/Login";
+import NotFount from "@/pages/NotFount";
 
 import { createBrowserRouter } from "react-router-dom";
 
