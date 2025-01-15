@@ -1,12 +1,22 @@
 import { Card } from "antd";
 import logo from "@/assets/logo.png";
 import "./index.scss";
-import { Form, Input, Button, Checkbox } from "antd";
+import { Form, Input, Button, Checkbox, message } from "antd";
+import { useDispatch } from "react-redux";
+import { fetchLogin } from "@/store/modules/user";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
-  function onFinish(values) {
+  let dispatch = useDispatch();
+  let navigate = useNavigate();
+
+  async function onFinish(values) {
     console.log(values);
+    await dispatch(fetchLogin(values));
+    navigate("/");
+    message.success("登录成功");
   }
+
   return (
     <div className="login">
       <Card className="login-container">
