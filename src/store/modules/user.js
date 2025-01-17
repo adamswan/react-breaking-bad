@@ -1,9 +1,9 @@
-// 用户相关的状态
 
 import { createSlice } from "@reduxjs/toolkit";
-import { request } from "@/utils/request";
 import { getToken, setToken as _setToken, removeToken } from "../../utils";
+import { loginAPI, getProfileAPI } from '../../apis/user'
 
+// 用户相关的状态
 const userStore = createSlice({
   // 模块名
   name: "user",
@@ -39,7 +39,7 @@ export const { setToken, setUserInfo, clearInfo } = userStore.actions;
 export function fetchLogin(loginForm) {
   return async function (dispatch) {
     // 发请求
-    const res = await request.post("/authorizations", loginForm);
+    const res = await loginAPI(loginForm);
     // 触发 reducers 中的方法修改状态
     dispatch(setToken(res.data.data.token));
   };
@@ -48,7 +48,7 @@ export function fetchLogin(loginForm) {
 export function fetchUserInfo() {
   return async function (dispatch) {
     // 发请求
-    const res = await request.get('/user/profile');
+    const res = await getProfileAPI();
     // 触发 reducers 中的方法修改状态
     dispatch(setUserInfo(res.data.data));
   };
