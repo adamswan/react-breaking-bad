@@ -2,7 +2,7 @@
 
 import { createSlice } from "@reduxjs/toolkit";
 import { request } from "@/utils/request";
-import { getToken, setToken as _setToken } from "../../utils";
+import { getToken, setToken as _setToken, removeToken } from "../../utils";
 
 const userStore = createSlice({
   // 模块名
@@ -23,11 +23,16 @@ const userStore = createSlice({
     setUserInfo(state, action) {
       state.userInfo = action.payload;
     },
+    clearInfo(state) {
+      state.token = ''
+      state.userInfo = {};
+      removeToken()
+    },
   },
 });
 
 // 暴露修改状态的方法
-export const { setToken, setUserInfo } = userStore.actions;
+export const { setToken, setUserInfo, clearInfo } = userStore.actions;
 
 // 修改状态的方法（异步）
 // 1、登录
