@@ -6,23 +6,26 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import "./index.scss";
-import { Outlet } from "react-router-dom";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from "react";
+import { fetchUserInfo } from "../../store/modules/user";
 
 const { Header, Sider } = Layout;
 
 const GeekLayout = () => {
+  // 导航菜单数据源
   const items = [
     {
       key: "/",
       label: "数据概览",
       icon: <HomeOutlined />,
-    //   children: [
-    //     {
-    //       key: "1.1",
-    //       label: "Option 5",
-    //     },
-    //   ],
+      //   children: [
+      //     {
+      //       key: "1.1",
+      //       label: "Option 5",
+      //     },
+      //   ],
     },
     {
       key: "/article",
@@ -40,12 +43,21 @@ const GeekLayout = () => {
 
   function handlerClick(route) {
     let path = route.key;
-    navigate(path)
+    navigate(path);
   }
 
-// 让选中菜单项高亮
+  // 让选中菜单项高亮
   let location = useLocation();
   let selectedKey = location.pathname;
+
+  const dispatch = useDispatch();
+
+  // 调用 store 中的异步方法获取用户信息
+  useEffect(() => {
+    dispatch(fetchUserInfo());
+  }, [dispatch]);
+
+  let userName = useSelector((state) => state.user.userInfo.name);
 
   return (
     <Layout>
@@ -53,7 +65,7 @@ const GeekLayout = () => {
       <Header className="header">
         <div className="logo" />
         <div className="user-info">
-          <span className="user-name">user.name</span>
+          <span className="user-name">{userName}</span>
           <span className="user-logout">
             <Popconfirm title="是否确认退出？" okText="退出" cancelText="取消">
               <LogoutOutlined /> 退出
