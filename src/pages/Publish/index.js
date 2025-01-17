@@ -8,28 +8,35 @@ import {
   Upload,
   Space,
   Select,
-  message
+  message,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 
 import "./index.scss";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { useState, useEffect } from "react";
-import { getChannelsAPI, createArticleAPI } from "../../apis/publish";
-import { useNavigate } from "react-router-dom";
-
+import { useState, useEffect, useRef } from "react";
+import {
+  getChannelsAPI,
+  createArticleAPI,
+  getArticleByIdAPI,
+  upgradeArticleAPI
+} from "../../apis/publish";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const { Option } = Select;
 
 function Publish() {
+  const [params] = useSearchParams();
+  const articleId = params.get("id"); // 文章id
+
   // 面包屑数据源
   let itemsOfBread = [
     {
       title: <a href="/">首页</a>,
     },
     {
-      title: "发布文章",
+      title: articleId ? "编辑文章" : "发布文章",
     },
   ];
 
@@ -60,6 +67,7 @@ function Publish() {
       }
       return file;
     });
+    console.log("看", fileList);
     setFileList(fileList);
   }
 
@@ -72,7 +80,8 @@ function Publish() {
   }
 
   const navigate = useNavigate();
- async function handlerFinish(data) {
+
+  async function handlerFinish(data) {
     if (fileList.length !== imgCount) {
       return message.error("封面数量不够");
     }
@@ -83,14 +92,54 @@ function Publish() {
       content,
       cover: {
         type: imgCount,
-        images: fileList.map((item) => item.url)
+        images: fileList.map((item) => {
+          if (item.response) {
+            return item.response.data.url;
+          } else {
+            return item.url
+          }
+        }),
       },
-      channel_id
+      channel_id,
+    };
+
+    if (articleId) {
+      await upgradeArticleAPI(body, articleId)
+    } else {
+      await createArticleAPI(body);
     }
-   await  createArticleAPI(body)
-   navigate("/article");
-   message.success("发布成功");
+   
+
+    navigate("/article");
+
+    message.success("发布成功");
   }
+
+  // 编辑模式回填数据
+  const formRef = useRef(); // 生成form组件的ref对象
+
+  async function getArticleById() {
+    let res = await getArticleByIdAPI(articleId);
+
+    formRef.current.setFieldsValue({
+      ...res.data.data,
+      type: res.data.data.cover.type,
+    });
+
+    // 数据结构不一致，单独处理封面图片
+    setImgCount(res.data.data.cover.type);
+
+    let newArr = res.data.data.cover.images.map((item) => {
+      return { url: item };
+    });
+    setFileList(newArr);
+  }
+
+  useEffect(() => {
+    if (articleId) {
+      getArticleById();
+    }
+  }, [articleId]);
 
   return (
     <div className="publish">
@@ -99,8 +148,9 @@ function Publish() {
           labelCol={{ span: 4 }}
           wrapperCol={{ span: 16 }}
           // 注意：此处需要为富文本编辑表示的 content 文章内容设置默认值
-          initialValues={{ content: "" , type: 1}}
+          initialValues={{ content: "", type: 1 }}
           onFinish={handlerFinish}
+          ref={formRef}
         >
           <Form.Item
             label="标题"
