@@ -7,6 +7,9 @@ import {
   Radio,
   DatePicker,
   Select,
+  Image,
+  Popconfirm,
+  message
 } from "antd";
 // import "moment/locale/zh-cn";
 import locale from "antd/es/date-picker/locale/zh_CN";
@@ -15,11 +18,16 @@ import { Table, Tag, Space } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 // import img404 from '@/assets/error.png'
 import { useGetChannels } from "../../Hooks/useChannels";
+import { getArticleListAPI , delArticleAPI} from "../../apis/article";
+import { useState, useEffect } from "react";
+import { allStatus, allColor } from "./constance";
+import {useNavigate} from 'react-router-dom'
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 function Article() {
+  const navigate = useNavigate();
   // 面包屑数据源
   let itemsOfBread = [
     {
@@ -30,14 +38,20 @@ function Article() {
     },
   ];
 
+  // 频道下拉数据源
+  const { channels } = useGetChannels();
+
+  // 表格列
   const columns = [
     {
       title: "封面",
       dataIndex: "cover",
       width: 120,
       render: (cover) => {
-        // return <img src={cover || img404} width={80} height={60} alt="" />
-        return <img src={cover || ""} width={80} height={60} alt="" />;
+        if (cover.images.length === 0) {
+          return <div style={{ width: "80px", height: "60px" }}>无图片</div>;
+        }
+        return <Image src={cover.images[0]} width={80} height={60} />;
       },
     },
     {
@@ -48,7 +62,9 @@ function Article() {
     {
       title: "状态",
       dataIndex: "status",
-      render: (data) => <Tag color="green">审核通过</Tag>,
+      render: (index) => {
+        return <Tag color={allColor[index]}>{allStatus[index]}</Tag>;
+      },
     },
     {
       title: "发布时间",
@@ -71,35 +87,89 @@ function Article() {
       render: (data) => {
         return (
           <Space size="middle">
-            <Button type="primary" shape="circle" icon={<EditOutlined />} />
-            <Button
-              type="primary"
-              danger
-              shape="circle"
-              icon={<DeleteOutlined />}
-            />
+            <Button type="primary" shape="circle" icon={<EditOutlined  onClick={() => navigate(`/publish?id=${data.id}`)}/>} />
+            <Popconfirm
+              title="确认删除该条文章吗?"
+              onConfirm={() => delArticle(data)}
+              okText="确认"
+              cancelText="取消"
+            >
+              <Button
+                type="primary"
+                danger
+                shape="circle"
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
           </Space>
         );
       },
     },
   ];
 
-  const data = [
-    {
-      id: "8218",
-      comment_count: 0,
-      cover: {
-        images: ["http://geek.itheima.net/resources/images/15.jpg"],
-      },
-      like_count: 0,
-      pubdate: "2019-03-11 09:00:00",
-      read_count: 2,
-      status: 2,
-      title: "wkwebview离线化加载h5资源解决方案",
-    },
-  ];
+  // 筛选
+  const [reqData, setReqData] = useState({
+    status: "",
+    channel_id: "",
+    begin_pubdate: "",
+    end_pubdate: "",
+    page: 1,
+    per_page: 10,
+  });
 
-  const { channels } = useGetChannels();
+  // 获取筛选表格的数据
+  function handlerFinish(formValue) {
+    let newVal = {
+      ...reqData,
+      channel_id: formValue.channel_id,
+      status: formValue.status,
+    };
+
+    if (formValue.date) {
+      newVal["begin_pubdate"] = formValue?.date[0]?.format("YYYY-MM-DD");
+      newVal["end_pubdate"] = formValue?.date[1]?.format("YYYY-MM-DD");
+    }
+
+    setReqData(newVal);
+  }
+
+  // 表格数据源
+  const [tableData, setTableData] = useState([]);
+  const [count, setCount] = useState(1);
+
+  // 获取表格数据
+  async function getTableList(data) {
+    const res = await getArticleListAPI(data);
+    setTableData(res.data.data.results);
+    setCount(res.data.data.total_count);
+  }
+
+  useEffect(() => {
+    getTableList(reqData);
+    // reqData 一变化，表格就会更新
+  }, [reqData]);
+
+  function handlerPageChange(page, newPageSize) {
+    console.log("newPageSize", newPageSize);
+    setReqData({
+      ...reqData,
+      page,
+      per_page: newPageSize,
+    });
+  }
+
+  // 删除回调
+  async function delArticle(data) {
+    console.log('data', data)
+    await delArticleAPI(data.id);
+    message.success("删除成功");
+    // 更新列表
+    setReqData({
+      ...reqData,
+      page: 1,
+      per_page: 20,
+    });
+  }
 
   return (
     <div>
@@ -108,7 +178,7 @@ function Article() {
         title={<Breadcrumb separator=">" items={itemsOfBread} />}
         style={{ marginBottom: 20 }}
       >
-        <Form initialValues={{ status: null, channel_id: 1 }}>
+        <Form initialValues={{ status: null }} onFinish={handlerFinish}>
           <Form.Item label="状态" name="status">
             <Radio.Group>
               <Radio value={null}>全部</Radio>
@@ -133,7 +203,7 @@ function Article() {
 
           <Form.Item label="日期" name="date">
             {/* 传入locale属性 控制中文显示*/}
-            <RangePicker locale={locale}></RangePicker>
+            <RangePicker locale={locale} format="YYYY-MM-DD"></RangePicker>
           </Form.Item>
 
           <Form.Item>
@@ -144,8 +214,16 @@ function Article() {
         </Form>
       </Card>
       {/* 表格 */}
-      <Card title={`根据筛选条件共查询到 count 条结果：`}>
-        <Table rowKey="id" columns={columns} dataSource={data} />
+      <Card title={`根据筛选条件共查询到 ${count} 条结果：`}>
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={tableData}
+          pagination={{
+            total: count,
+            onChange: handlerPageChange,
+          }}
+        />
       </Card>
     </div>
   );

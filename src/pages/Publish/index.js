@@ -11,12 +11,14 @@ import {
   message
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { Link } from "react-router-dom";
+
 import "./index.scss";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useState, useEffect } from "react";
 import { getChannelsAPI, createArticleAPI } from "../../apis/publish";
+import { useNavigate } from "react-router-dom";
+
 
 const { Option } = Select;
 
@@ -69,7 +71,8 @@ function Publish() {
     setImgCount(count);
   }
 
-  function handlerFinish(data) {
+  const navigate = useNavigate();
+ async function handlerFinish(data) {
     if (fileList.length !== imgCount) {
       return message.error("封面数量不够");
     }
@@ -84,7 +87,9 @@ function Publish() {
       },
       channel_id
     }
-    createArticleAPI(body)
+   await  createArticleAPI(body)
+   navigate("/article");
+   message.success("发布成功");
   }
 
   return (

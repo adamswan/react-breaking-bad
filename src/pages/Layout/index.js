@@ -56,7 +56,7 @@ const GeekLayout = () => {
   useEffect(() => {
     dispatch(fetchUserInfo());
   }, [dispatch]);
-  let userName = useSelector((state) => state.user.userInfo.name);
+  // let userName = useSelector((state) => state.user.userInfo.name);
 
   function handlerConfirm() {
     console.log("confirm");
@@ -70,7 +70,7 @@ const GeekLayout = () => {
       <Header className="header">
         <div className="logo" />
         <div className="user-info">
-          <span className="user-name">{userName}</span>
+          <span className="user-name">{'Walt White'}</span>
           <span className="user-logout">
             <Popconfirm title="是否确认退出？" okText="退出" cancelText="取消" onConfirm={handlerConfirm}>
               <LogoutOutlined /> 退出
